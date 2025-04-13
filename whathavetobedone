@@ -1,0 +1,2 @@
+almalinux - probably nothing (just copy open key to server)
+debian - ... (create pairs of keys, add file with authorized keys (copy value from open key), configure /etc/ssh/sshd_config file - uncomment or change: PermitRootLogin yes, AuthorizedKeysFile .ssh/authorized_key (or whatever u want), PasswordAuthentification no (idk if its right); then u have to restart sshd service)
