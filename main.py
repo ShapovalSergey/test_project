@@ -32,6 +32,10 @@ class Core():
         self.check_status(self.fhost)
         self.conf_files(self.fhost)
 
+        
+
+
+
     def get_host_name_type(self,host):
         hostname = host
         myuser   = 'root'
@@ -71,9 +75,16 @@ class Core():
         sshcon   = paramiko.SSHClient() 
         sshcon.set_missing_host_key_policy(paramiko.AutoAddPolicy()) 
         sshcon.connect(hostname, username=myuser, pkey=pkey)
-        stdin, stdout, stderr = sshcon.exec_command("cat " + self.pg_conf_path + "postgresql.conf")
-        print(stdout.read().decode(encoding='UTF-8'))
-        print(stderr.read().decode(encoding='UTF-8'))
+        stdin, stdout, stderr = sshcon.exec_command("sed -i \"s|#listen_addresses = 'localhost'|listen_addresses = '*'|\" " + self.pg_conf_path + "postgresql.conf")
+        stdout.read().decode(encoding='UTF-8')
+        stdin, stdout, stderr = sshcon.exec_command("sed -i \"s|#port = 5432|port = 5432|\" " + self.pg_conf_path + "postgresql.conf")
+        stdout.read().decode(encoding='UTF-8')
+        stdin, stdout, stderr = sshcon.exec_command("systemctl restart postgresql.service")
+        stdout.read().decode(encoding='UTF-8')
+        stdin, stdout, stderr = sshcon.exec_command("su -c \"psql -c \\\"CREATE ROLE student WITH LOGIN SUPERUSER PASSWORD 'password'\\\"\" postgres")
+        stdout.read().decode(encoding='UTF-8')
+        stdin, stdout, stderr = sshcon.exec_command("echo \"host\t\tall\tstudent\t\t192.168.0.109/32\tmd5\n\" >>" + self.pg_conf_path + "pg_hba.conf")
+        stdout.read().decode(encoding='UTF-8')
         sshcon.close()
 
     def install(self, hostname, hostdistro):
@@ -93,7 +104,7 @@ class Core():
             stdout.read().decode(encoding='UTF-8')
             self.pg_conf_path="/var/lib/pgsql/data/"
         sshcon.close()
-        time.sleep(5)
+        #time.sleep(5)
         self.status = True
 
     def scanf(self):
