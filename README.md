@@ -4,7 +4,13 @@
 Запустить проект командной 'py .\main.py'
 Далее всё в соответствии с заданием
 
-
+Примеры работы:
+1) Успешное выполнение на almalinux
+![alt text](screenshots/Screenshot_1351.png) 
+2) Ошибка инсталяции (как пример debian)
+![alt text](screenshots/Screenshot_1353.png) 
+3) Успешное выполнение на debian
+![alt text](screenshots/Screenshot_1353.png)
 
 В процессе выполнения возникли следующие вопросы:
 
