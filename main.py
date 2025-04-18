@@ -1,11 +1,14 @@
 import paramiko
 import threading, time
 import re
+import sys
 
 class Core():
     def __init__(self):
         self.status = False
         self.pg_conf_path = ""
+        self.install_status=False
+        
     def start(self):
         self.scanf()
         hosts_list = list(filter(None, re.split(' |,',self.hosts)))
@@ -13,10 +16,9 @@ class Core():
         self.fhost = ""
         self.fhostdistro = ""
         for host in hosts_list:
-            #print(hosts_list)
             self.get_host_name_type(host)
-        print(self.fhost)
-        print(self.fhostdistro)
+        print("\n#Hostname or IP: "+self.fhost)
+        print("\n#Distribution name: "+self.fhostdistro)
         thread = threading.Thread(target=self.install, args=[self.fhost, self.fhostdistro])
         thread.start()
         load_char = ["|", "/", "_", "\\"]
@@ -28,13 +30,14 @@ class Core():
             c+=1
             if c == 4:
                 c=0
-        print("Installation succeeded")
+        if self.install_status:
+            print("#Installation succeeded\n")
+        else:
+            print("#Installation failed\n")
+            sys.exit()
+        print("#postgresql.service status\n")
         self.check_status(self.fhost)
         self.conf_files(self.fhost)
-
-        
-
-
 
     def get_host_name_type(self,host):
         hostname = host
@@ -45,7 +48,6 @@ class Core():
         sshcon.set_missing_host_key_policy(paramiko.AutoAddPolicy()) 
         sshcon.connect(hostname, username=myuser, pkey=pkey)
         stdin, stdout, stderr = sshcon.exec_command("cat /proc/loadavg")
-        #print(stdout.read().decode(encoding='UTF-8').split()[0])
         curr_host_load = float(stdout.read().decode(encoding='UTF-8').split()[0])
         if self.min_load > curr_host_load: 
             self.min_load = curr_host_load
@@ -64,7 +66,6 @@ class Core():
         sshcon.connect(hostname, username=myuser, pkey=pkey)
         stdin, stdout, stderr = sshcon.exec_command("systemctl status postgresql.service")
         print(stdout.read().decode(encoding='UTF-8'))
-        print(stderr.read().decode(encoding='UTF-8'))
         sshcon.close()
 
     def conf_files(self, hostname):
@@ -85,6 +86,8 @@ class Core():
         stdout.read().decode(encoding='UTF-8')
         stdin, stdout, stderr = sshcon.exec_command("echo \"host\t\tall\tstudent\t\t192.168.0.109/32\tmd5\n\" >>" + self.pg_conf_path + "pg_hba.conf")
         stdout.read().decode(encoding='UTF-8')
+        stdin, stdout, stderr = sshcon.exec_command("su -c \"psql -c \\\"SELECT 1;\\\"\" postgres")
+        print("#Database check (SELECT 1)\n\n"+stdout.read().decode(encoding='UTF-8'))
         sshcon.close()
 
     def install(self, hostname, hostdistro):
@@ -103,32 +106,14 @@ class Core():
             stdin, stdout, stderr = sshcon.exec_command("dnf install -y postgresql-server;  postgresql-setup --initdb ;systemctl enable postgresql.service; systemctl start postgresql.service")
             stdout.read().decode(encoding='UTF-8')
             self.pg_conf_path="/var/lib/pgsql/data/"
+        stdin, stdout, stderr = sshcon.exec_command("psql -V")
+        if stderr.read().decode(encoding='UTF-8')=="":
+            self.install_status = True
         sshcon.close()
-        #time.sleep(5)
         self.status = True
 
     def scanf(self):
         self.hosts = input("Input hostname or Ip-addresses: ")
 
-
 core = Core()
 core.start()
-
-
-
-
-
-
-
-
-
-"""
-cat /etc/*-release | grep NAME | head -n1 | cut -d '=' -f2
-
-stdin, stdout, stderr = sshcon.exec_command("apt install -y screenfetch")
-if stdout.read().decode(encoding='UTF-8'):
-    print("Installation succeeded")
-else:
-    print(stderr.read().decode(encoding='UTF-8'))
-
-"""
